@@ -32,7 +32,7 @@ def bezier(t, points):
 
 def bezier_curve_range(n, points):
     """Range of points in a curve bezier"""
-    for i in xrange(n):
+    for i in range(n):
         t = i / float(n - 1)
         yield bezier(t, points)
 
@@ -43,8 +43,18 @@ class BezierDrawer(QtGui.QWidget):
     def __init__(self):
         super(BezierDrawer, self).__init__()
 
+        self.button = QtGui.QPushButton('Clear', self)
+        self.button.clicked.connect(self.handleClearView)
+        layout = QtGui.QVBoxLayout(self)
+        layout.addWidget(self.button)
+
         self.setGeometry(300, 300, 450, 450)
         self.setWindowTitle('Bezier Curves')
+        self.coordList = []
+
+    def handleClearView(self):
+        self.view.scene.clear()
+        self.coordList.clear()
 
     def paintEvent(self, e):
       
@@ -53,7 +63,10 @@ class BezierDrawer(QtGui.QWidget):
         qp.setRenderHints(QtGui.QPainter.Antialiasing, True)
         self.doDrawing(qp)        
         qp.end()
-        
+
+    def mousePressEvent(self, event):
+
+        self.coordList.append(event.pos())
 
     def doDrawing(self, qp):
 
@@ -64,6 +77,12 @@ class BezierDrawer(QtGui.QWidget):
         redBrush = QtGui.QBrush(QtCore.Qt.red)
 
         steps = 1000
+        controlPoints = (
+                (50, 170),
+                (150, 370),
+                (250, 35),
+                (400, 320))
+
         oldPoint = controlPoints[0]
 
         qp.setPen(redPen)
@@ -94,7 +113,7 @@ def inputpoints():
 	nr = int(input())
 	controlPoints = np.zeros((nr, 2), int)
 
-	for i in xrange(nr):
+	for i in range(nr):
 		controlPoints[i][0] = int(input())
 		controlPoints[i][1] = int(input())
 
@@ -106,7 +125,7 @@ def main(args):
 
 
 if __name__=='__main__':
-    inputpoints()
+    #inputpoints()
     main(sys.argv[1:])
 
 
