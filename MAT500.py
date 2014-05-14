@@ -7,6 +7,7 @@ class Ilan(Frame):
         Frame.__init__(self, parent, background = "white")
 
         self.parent = parent
+        self.points = []
 
         self.initUI()
 
@@ -22,8 +23,21 @@ class Ilan(Frame):
         fileMenu.add_command(label = "Exit", command = self.onExit)
         menubar.add_cascade(label = "File", menu = fileMenu)
 
+        self.canvas = Canvas(self)
+        self.canvas.bind("<Button-1>", self.addPoint)
+        self.canvas.bind("<Button-2>", self.printPoints)
+        self.canvas.pack(fill = BOTH, expand = 1)
+
     def onExit(self):
         self.quit()
+
+    def addPoint(self, event):
+        self.canvas.create_oval(event.x, event.y, event.x + 1, event.y + 1, fill = "black")
+        self.points.append(event.x)
+        self.points.append(event.y)
+
+    def printPoints(self, event):
+        print(len(self.points))
 
 def main():
 
