@@ -1,5 +1,34 @@
 from tkinter import *
 
+class Point():
+
+    def __init__(self, X = 0, Y = 0):
+        self.x = X
+        self.y = Y
+
+    def addP(self, rhs):
+        self.x += rhs.x
+        self.y += rhs.y
+
+    def subP(self, rhs):
+        self.x -= rhs.x
+        self.y -= rhs.y
+
+    def mulP(self, rhs):
+        self.x *= rhs.x
+        self.y *= rhs.y
+
+    def divP(self, rhs):
+        self.x /= rhs.x
+        self.y /= rhs.y
+
+    def prnt(self):
+        print("X: ", self.x, " Y: ", self.y)
+
+    def resetP(self):
+        self.x = 0
+        self.y = 0
+
 
 class Ilan(Frame):
 
