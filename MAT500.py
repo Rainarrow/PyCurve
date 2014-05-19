@@ -1,4 +1,5 @@
 from tkinter import *
+from copy import deepcopy
 import sys, math
 
 CONST_POINT_SIZE = 5
@@ -35,11 +36,36 @@ class Point():
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y
 
+def calcMidPoint(points):#Accepts list of Points, returns list of Points
+    if(len(points) >= 2):
+        result = []
+        for i in range(0, len(points) - 1):
+            x = 0.5 * points[i].x + 0.5 * points[i + 1].x
+            y = 0.5 * points[i].y + 0.5 * points[i + 1].y
+            result.append(Point(x, y))
+    return result
+
 def binomialCof(i, n):
     return math.factorial(n) / float(math.factorial(i) * math.factorial(n - i))
 
 def bernstein(t, i, n):
     return binomialCof(i, n) * (t ** i) * ((1 - t) ** (n - i))
+
+def bezier(points, t):
+    n = len(points) - 1
+    result = Point()
+
+    for i, pt in enumerate(points):
+        b = bernstein(t, i, n)
+        result.x += pt.x * b
+        result.y += pt.y * b
+
+    return result
+
+def bezierGenerator(points, n):
+    for i in range(n):
+        t = i / float(n - 1)
+        yield bezier(points, t)
 
 class Ilan(Frame):
 
@@ -48,7 +74,9 @@ class Ilan(Frame):
 
         self.parent = parent
         self.ctrlPoints = []
+        self.plotPoints = [] #The actual curve goes here
         self.dragPtIndex = 128
+        self.shouldDrawShell = False
 
         self.initUI()
 
@@ -65,7 +93,7 @@ class Ilan(Frame):
         fileMenu.add_command(label = "Exit", command = self.onExit)
         menubar.add_cascade(label = "File", menu = fileMenu)
 
-        algList = ("De Casteljau", "Bernstein", "Midpt Subdiv")
+        algList = ("De Casteljau", "De Casteljau(Recursive)", "Bernstein", "Midpt Subdiv")
         self.strVar = StringVar()
         self.strVar.set(algList[0])
 
@@ -79,32 +107,57 @@ class Ilan(Frame):
         self.tScale = Scale(self.toolbar, orient = HORIZONTAL, from_ = 0.0, to = 1.0, resolution = 0.01, command = self.updateShellOnTScaleChange)
         self.tScale.set(0.5)
         self.tScale.pack(side = "left")
+        
+        self.ctrlPtNum = StringVar()
+        self.ctrlPtNum.set("0") 
+        self.ctrlPtNumLabel = Label(self.toolbar, textvariable = self.ctrlPtNum)
+        self.ctrlPtNumLabel.pack(side = "left")
+
+        self.shellCheckBox = Checkbutton(self.toolbar, text = "Draw Shell", variable = self.shouldDrawShell)#, command = self.onCMB)
+        self.shellCheckBox.pack(side = "left")
+
         self.toolbar.pack(side = "top", fill = X)
 
         self.canvas = Canvas(self)
         self.canvas.pack(fill = BOTH, expand = 1)
         #self.canvas.bind("<ButtonPress-2>", self.onCMB)
-        #self.canvas.bind("<ButtonPress-2>", self.drawLine)
-        self.canvas.bind("<ButtonPress-2>", self.onRMB)
+        self.canvas.bind("<ButtonPress-2>", self.testMidSubDiv)
+        self.canvas.bind("<ButtonPress-3>", self.onRMB)
         self.canvas.tag_bind("ctrlPts", "<ButtonPress-1>", self.onDrag)
         self.canvas.tag_bind("ctrlPts", "<ButtonPress-2>", self.getPos)
         self.canvas.tag_bind("ctrlPts", "<B1-Motion>", self.onMotion)
 
         self.pack(fill = BOTH, expand = 1)
+
     def onExit(self):
         self.quit()
+
+    def testMidSubDiv(self, event):
+        self.canvas.delete("test")
+        ptl, ptr = self.midpointSubDiv(self.ctrlPoints)
+        print(len(ptr))
+        if(len(ptl) >=2):
+            for i in range(len(ptl) - 1):
+                self.canvas.create_line(ptl[i].x, ptl[i].y, ptl[i + 1].x, ptl[i + 1].y, tag = "test")
+                self.canvas.create_oval(ptl[i].x, ptl[i].y, ptl[i].x + 10, ptl[i].y + 10, tag = "test", fill = "red")
+
+        if(len(ptr) >=2):
+            for i in range(len(ptr) - 1):
+                self.canvas.create_line(ptr[i].x, ptr[i].y, ptr[i + 1].x, ptr[i + 1].y, tag = "test")
+                self.canvas.create_oval(ptr[i].x, ptr[i].y, ptr[i].x + 10, ptr[i].y + 10, tag = "test", fill = "red")
 
     def onRMB(self, event):
         self.canvas.create_oval(event.x - CONST_POINT_SIZE, event.y - CONST_POINT_SIZE, event.x + CONST_POINT_SIZE, event.y + CONST_POINT_SIZE, fill = "black", tag = "ctrlPts")
         self.ctrlPoints.append(Point(event.x, event.y))
+        self.ctrlPtNum.set(len(self.ctrlPoints))
         self.drawLine(event)
 
         self.onCMB(event)
 
 
     def onDrag(self, event):
-        #self.dragData["item"] = self.canvas.find_closest(event.x, event.y)[0]
-        self.dragData["item"] = self.canvas.find('closest', event.x, event.y, 'withtag', 'ctrlPts')
+        self.dragData["item"] = self.canvas.find_closest(event.x, event.y)[0]
+        #self.dragData["item"] = self.canvas.find('closest', event.x, event.y, 'withtag', 'ctrlPts')
         self.dragData["x"] = event.x
         self.dragData["y"] = event.y
 
@@ -138,10 +191,17 @@ class Ilan(Frame):
         self.drawShell(self.ctrlPoints, float(self.tScale.get()))
 
         self.canvas.delete("plot")
+
+        """
+        De Castlejau`
         t = 0
         while(t <= 1024):
             self.drawCurveNLI(self.ctrlPoints, t / 1024)
             t += 1
+        """
+
+        self.drawCurveBB(self.ctrlPoints)
+        
 
     def updateShellOnTScaleChange(self, t):
         self.canvas.delete("shell")
@@ -153,7 +213,7 @@ class Ilan(Frame):
     def clearAll(self):
         self.canvas.delete("all")
         self.ctrlPoints.clear()
-
+        self.plotPoints.clear()
 
     def drawLine(self, event):
         #Clear existing lines
@@ -165,6 +225,9 @@ class Ilan(Frame):
 
     def drawShellLine(self, points):
         #Redraw
+        if self.shouldDrawShell == False:
+            return
+
         if(len(points) >=2):
             for i in range(len(points) - 1):
                 self.canvas.create_line(points[i].x, points[i].y, points[i + 1].x, points[i + 1].y, fill = "green", tag = "shell")
@@ -183,6 +246,22 @@ class Ilan(Frame):
             
             self.drawCurveNLI(newPoints, t)
 
+    def drawCurveNLI_NR(self, points, t):
+        #Non-recursive version
+        n = len(points)
+
+        self.plotPoints.clear()
+        self.plotPoints = deepcopy(points)
+
+        for k in range(1, n):
+            for i in range (0, n - k):
+                self.plotPoints[i].x = (1 - t) * self.plotPoints[i].x + t * self.plotPoints[i + 1].x
+                self.plotPoints[i].y =  (1 - t) * self.plotPoints[i].y + t * self.plotPoints[i + 1].y
+
+        for pt in self.plotPoints:
+            #print(pt.x, pt.y)
+            self.plotPixel(pt.x, pt.y)
+
     def drawShell(self, points, t):
         if(len(points) > 2):
             newPoints = []
@@ -193,6 +272,40 @@ class Ilan(Frame):
 
             self.drawShellLine(newPoints)
             self.drawShell(newPoints, t)
+
+    def drawCurveBB(self, points):
+        for pt in bezierGenerator(self.ctrlPoints, 1024):
+            self.plotPixel(pt.x, pt.y)
+
+    def midpointSubDiv(self, points):
+        k = len(points)
+        left = [Point() for _ in range(k)]
+        right = [Point() for _ in range(k)]
+        curr = [Point() for _ in range(k - 1)]
+
+        left[0] = points[0]
+        right[k - 1] = points[k - 1]
+
+        for i in range(k - 1):
+            curr[i].x = 0.5 * points[i].x + 0.5 * points[i + 1].x
+            curr[i].y = 0.5 * points[i].y + 0.5 * points[i + 1].y
+
+        
+        for i in range(k - 2):
+            left[i + 1] = curr[0]
+            right[k - 2 - i] = curr[k - 2 - i]
+            for j in range(k - 2 - i):
+                curr[j].x = 0.5 * curr[j].x + 0.5 * curr[j + 1].x
+                curr[j].y = 0.5 * curr[j].y + 0.5 * curr[j + 1].y
+
+        left[k - 1] = curr[0]
+        right[0] = curr[0]
+
+        for pt in left:
+            self.canvas.create_oval(pt.x, pt.y, pt.x + 20, pt.y + 20, tag = "fuck", fill = "blue")
+            print("CURR", pt.x, pt.y)
+        return left, right
+
 
 
 def main():
