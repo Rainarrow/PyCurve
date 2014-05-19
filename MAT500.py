@@ -47,7 +47,6 @@ class Ilan(Frame):
         Frame.__init__(self, parent, background = "white")
 
         self.parent = parent
-        self.points = []
         self.ctrlPoints = []
         self.dragPtIndex = 128
 
@@ -75,7 +74,7 @@ class Ilan(Frame):
         self.algMenu = OptionMenu(self.toolbar, self.strVar, *algList)
         self.algMenu.pack(side = "left")
 
-        self.clearBtn = Button(self.toolbar, text = "clear", state = DISABLED)
+        self.clearBtn = Button(self.toolbar, text = "clear", command = self.clearAll)
         self.clearBtn.pack(side = "left")
         self.tScale = Scale(self.toolbar, orient = HORIZONTAL, from_ = 0.0, to = 1.0, resolution = 0.01, command = self.updateShellOnTScaleChange)
         self.tScale.set(0.5)
@@ -84,9 +83,9 @@ class Ilan(Frame):
 
         self.canvas = Canvas(self)
         self.canvas.pack(fill = BOTH, expand = 1)
-        self.canvas.bind("<ButtonPress-2>", self.onCMB)
+        #self.canvas.bind("<ButtonPress-2>", self.onCMB)
         #self.canvas.bind("<ButtonPress-2>", self.drawLine)
-        self.canvas.bind("<ButtonPress-3>", self.onRMB)
+        self.canvas.bind("<ButtonPress-2>", self.onRMB)
         self.canvas.tag_bind("ctrlPts", "<ButtonPress-1>", self.onDrag)
         self.canvas.tag_bind("ctrlPts", "<ButtonPress-2>", self.getPos)
         self.canvas.tag_bind("ctrlPts", "<B1-Motion>", self.onMotion)
@@ -98,14 +97,14 @@ class Ilan(Frame):
     def onRMB(self, event):
         self.canvas.create_oval(event.x - CONST_POINT_SIZE, event.y - CONST_POINT_SIZE, event.x + CONST_POINT_SIZE, event.y + CONST_POINT_SIZE, fill = "black", tag = "ctrlPts")
         self.ctrlPoints.append(Point(event.x, event.y))
-        print("Add point: x = ", event.x, "y = ", event.y)
         self.drawLine(event)
 
         self.onCMB(event)
 
 
     def onDrag(self, event):
-        self.dragData["item"] = self.canvas.find_closest(event.x, event.y)[0]
+        #self.dragData["item"] = self.canvas.find_closest(event.x, event.y)[0]
+        self.dragData["item"] = self.canvas.find('closest', event.x, event.y, 'withtag', 'ctrlPts')
         self.dragData["x"] = event.x
         self.dragData["y"] = event.y
 
@@ -151,6 +150,11 @@ class Ilan(Frame):
     def plotPixel(self, x, y):
         self.canvas.create_line(x, y, x + 1, y, fill = "blue", tag = "plot")
 
+    def clearAll(self):
+        self.canvas.delete("all")
+        self.ctrlPoints.clear()
+
+
     def drawLine(self, event):
         #Clear existing lines
         self.canvas.delete("line")
@@ -186,8 +190,6 @@ class Ilan(Frame):
                 x = (1 - t) * points[i].x + t * points[i + 1].x
                 y = (1 - t) * points[i].y + t * points[i + 1].y
                 newPoints.append(Point(x, y))
-                print(len(newPoints))
-                print("NP: ", x, y)
 
             self.drawShellLine(newPoints)
             self.drawShell(newPoints, t)
