@@ -56,7 +56,6 @@ class Ilan(Frame):
         self.algList = ("De Casteljau", "De Casteljau(Recursive)", "Bernstein")#, "Midpt Subdiv")
         self.parent = parent
         self.ctrlPoints = []
-        self.plotPoints = [] #The actual curve goes here
         self.curAlg = StringVar()
         self.curAlg.set(self.algList[0])
         self.dragPtIndex = 128
@@ -129,7 +128,7 @@ class Ilan(Frame):
 
     def addInputPt(self, event):
         #Receives input point from mouse click, draw line segments connecting them, then calls drawCurve
-        self.canvas.create_oval(event.x - CONST_POINT_SIZE, event.y - CONST_POINT_SIZE, event.x + CONST_POINT_SIZE, event.y + CONST_POINT_SIZE, fill = "black", tag = "ctrlPts")
+        self.canvas.create_rectangle(event.x - CONST_POINT_SIZE, event.y - CONST_POINT_SIZE, event.x + CONST_POINT_SIZE, event.y + CONST_POINT_SIZE, fill = "gray", tag = "ctrlPts")
         self.ctrlPoints.append(Point(event.x, event.y))
         self.ctrlPtNum.set(len(self.ctrlPoints))
         self.drawLine(event)
