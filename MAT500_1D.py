@@ -94,23 +94,21 @@ class Ilan(Frame):
         self.tScale.pack(side = "left")
         
         self.ctrlPtNum = StringVar()
-        self.ctrlPtNum.set("0") 
+        self.ctrlPtNum.set("Input points: 0") 
         self.ctrlPtNumLabel = Label(self.toolbar, textvariable = self.ctrlPtNum)
         self.ctrlPtNumLabel.pack(side = "left")
 
 
-        self.shellCheckBox = Checkbutton(self.toolbar, text = "Draw Shell", variable = self.shouldDrawShell, command = self.drawCurve)
-        self.shellCheckBox.pack(side = "left")
 
         self.toolbar.pack(side = "top", fill = X)
 
         self.canvas = Canvas(self)
         self.canvas.pack(fill = BOTH, expand = 1)
         #self.canvas.bind("<ButtonPress-2>", self.onCMB)
-        self.canvas.bind("<ButtonPress-2>", self.testMidSubDiv)
-        self.canvas.bind("<ButtonPress-3>", self.addInputPt)
+        #self.canvas.bind("<ButtonPress-2>", self.testMidSubDiv)
+        #self.canvas.bind("<ButtonPress-3>", self.addInputPt)
         self.canvas.tag_bind("ctrlPts", "<ButtonPress-1>", self.onDrag)
-        self.canvas.tag_bind("ctrlPts", "<ButtonPress-2>", self.getPos)
+        #self.canvas.tag_bind("ctrlPts", "<ButtonPress-2>", self.getPos)
         self.canvas.tag_bind("ctrlPts", "<B1-Motion>", self.onMotion)
 
         self.degreeText = StringVar()
@@ -122,6 +120,8 @@ class Ilan(Frame):
         self.degreeNumText.set(self.degree)
         self.degreeNumLabel = Label(self.toolbar, textvariable = self.degreeNumText)
         self.degreeNumLabel.pack(side = "left")
+        self.shellCheckBox = Checkbutton(self.toolbar, text = "Draw Shell", variable = self.shouldDrawShell, command = self.drawCurve)
+        self.shellCheckBox.pack(side = "left")
         self.pack(fill = BOTH, expand = 1)
 
         self.initScene()
@@ -137,18 +137,18 @@ class Ilan(Frame):
         self.spawnDefaultPt()
 
     def initScene(self):
-        self.canvas.create_line(0, 250, 800, 250, tag = "axis", fill = "blue", width = 2)#X Axis
-        self.canvas.create_line(15, 15, 15, 700, tag = "axis", fill = "blue", width = 2)#Y Axis
-        self.canvas.create_line(15, 400, 20, 400, tag = "axis", fill = "blue", width = 2)
-        self.canvas.create_line(15, 350, 20, 350, tag = "axis", fill = "blue", width = 2)
-        self.canvas.create_line(15, 300, 20, 300, tag = "axis", fill = "blue", width = 2)
-        self.canvas.create_line(15, 200, 20, 200, tag = "axis", fill = "blue", width = 2)
-        self.canvas.create_line(15, 150, 20, 150, tag = "axis", fill = "blue", width = 2)
-        self.canvas.create_line(15, 100, 20, 100, tag = "axis", fill = "blue", width = 2)
-        self.canvas.create_line(15, 50, 20, 50, tag = "axis", fill = "blue", width = 2)
-        self.canvas.create_line(760, 245, 760, 255, tag = "axis", fill = "blue", width = 2)#X Axis
-        self.createPointAt(15, 200)
-        self.createPointAt(760, 200)
+        self.canvas.create_line(0, 355, 800, 355, tag = "axis", fill = "blue", width = 2)#X Axis
+        self.canvas.create_line(15, 5, 15, 800, tag = "axis", fill = "blue", width = 2)#Y Axis
+        self.canvas.create_line(15, 730, 20, 730, tag = "axis", fill = "blue", width = 2)
+        self.canvas.create_line(15, 605, 20, 605, tag = "axis", fill = "blue", width = 2)
+        self.canvas.create_line(15, 480, 20, 480, tag = "axis", fill = "blue", width = 2)
+
+        self.canvas.create_line(15, 230, 20, 230, tag = "axis", fill = "blue", width = 2)
+        self.canvas.create_line(15, 105, 20, 105, tag = "axis", fill = "blue", width = 2)
+        self.canvas.create_line(15, 5, 20, 5, tag = "axis", fill = "blue", width = 2)
+        self.canvas.create_line(765, 350, 765, 360, tag = "axis", fill = "blue", width = 2)
+        self.createPointAt(15, 230)
+        self.createPointAt(765, 230)
 
 
     def testMidSubDiv(self, event):
@@ -171,10 +171,13 @@ class Ilan(Frame):
 
         self.canvas.delete("ctrlPts")
         self.ctrlPoints.clear()
-        self.createPointAt(15, 200)
+        self.createPointAt(15, 230)
         for i in range(1, self.degree):
-            self.createPointAt(i * 800 / self.degree + 1, 200)
-        self.createPointAt(760, 200)
+            self.createPointAt((i * 750 / self.degree) + 15, 230)
+        self.createPointAt(765, 230)
+
+        for pt in self.ctrlPoints:
+            pt.prnt()
 
     def addInputPt(self, event):
         self.createPointAt(event.x, event.y)
@@ -183,7 +186,7 @@ class Ilan(Frame):
         #Receives input point from mouse click, draw line segments connecting them, then calls drawCurve
         self.canvas.create_rectangle(x - CONST_POINT_SIZE, y - CONST_POINT_SIZE, x + CONST_POINT_SIZE, y + CONST_POINT_SIZE, fill = "gray", tag = "ctrlPts")
         self.ctrlPoints.append(Point(x, y))
-        self.ctrlPtNum.set(len(self.ctrlPoints))
+        self.ctrlPtNum.set("Input Points: " + str(len(self.ctrlPoints)))
 
         self.drawLine()
         self.drawCurve()
@@ -258,6 +261,8 @@ class Ilan(Frame):
         self.canvas.delete("all")
         self.ctrlPoints.clear()
         self.ctrlPtNum.set(len(self.ctrlPoints))
+        self.degree = 1
+        self.degreeNumText.set(self.degree)
         self.initScene()
 
     def drawLine(self, event = 0):
@@ -352,7 +357,7 @@ class Ilan(Frame):
 def main():
 
     root = Tk()
-    root.geometry("800x600+200+200")
+    root.geometry("800x850+200+200")
     root.option_add('*tearOff', False)
     app = Ilan(root)
     root.mainloop()
