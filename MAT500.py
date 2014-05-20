@@ -11,29 +11,9 @@ class Point():
         self.x = X
         self.y = Y
 
-    def addP(self, rhs):
-        self.x += rhs.x
-        self.y += rhs.y
-
-    def subP(self, rhs):
-        self.x -= rhs.x
-        self.y -= rhs.y
-
-    def mulP(self, rhs):
-        self.x *= rhs.x
-        self.y *= rhs.y
-
-    def divP(self, rhs):
-        self.x /= rhs.x
-        self.y /= rhs.y
-
     def prnt(self):
         print("X: ", self.x, " Y: ", self.y)
 
-    def resetP(self):
-        self.x = 0
-        self.y = 0
-        
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y
 
@@ -73,7 +53,7 @@ class Ilan(Frame):
     def __init__(self, parent):
         Frame.__init__(self, parent, background = "white")
 
-        self.algList = ("De Casteljau", "De Casteljau(Recursive)", "Bernstein", "Midpt Subdiv")
+        self.algList = ("De Casteljau", "De Casteljau(Recursive)", "Bernstein")#, "Midpt Subdiv")
         self.parent = parent
         self.ctrlPoints = []
         self.plotPoints = [] #The actual curve goes here
@@ -100,7 +80,7 @@ class Ilan(Frame):
 
         self.toolbar = Frame(self.parent, height = 20, bd = 1, relief = RAISED)
 
-        self.algMenu = OptionMenu(self.toolbar, self.curAlg, *self.algList)
+        self.algMenu = OptionMenu(self.toolbar, self.curAlg, *self.algList, command = self.drawCurve)
         self.algMenu.pack(side = "left")
 
         self.clearBtn = Button(self.toolbar, text = "clear", command = self.clearAll)
@@ -114,7 +94,7 @@ class Ilan(Frame):
         self.ctrlPtNumLabel = Label(self.toolbar, textvariable = self.ctrlPtNum)
         self.ctrlPtNumLabel.pack(side = "left")
 
-        self.shellCheckBox = Checkbutton(self.toolbar, text = "Draw Shell", variable = self.shouldDrawShell)#, command = self.onCMB)
+        self.shellCheckBox = Checkbutton(self.toolbar, text = "Draw Shell", variable = self.shouldDrawShell, command = self.drawCurve)
         self.shellCheckBox.pack(side = "left")
 
         self.toolbar.pack(side = "top", fill = X)
@@ -146,8 +126,6 @@ class Ilan(Frame):
             for i in range(len(ptr) - 1):
                 self.canvas.create_line(ptr[i].x, ptr[i].y, ptr[i + 1].x, ptr[i + 1].y, tag = "test")
                 self.canvas.create_oval(ptr[i].x, ptr[i].y, ptr[i].x + 10, ptr[i].y + 10, tag = "test", fill = "red")
-
-
 
     def addInputPt(self, event):
         #Receives input point from mouse click, draw line segments connecting them, then calls drawCurve
@@ -181,7 +159,7 @@ class Ilan(Frame):
         self.dragData["y"] = event.y
 
         self.drawLine(event)
-        self.onCMB(event)
+        self.drawCurve(event)
 
     def getPos(self, event):
 
@@ -190,14 +168,14 @@ class Ilan(Frame):
         #print(x1, y1, x2, y2)
         print(x1 + 3, y1 + 3)
 
-    def drawCurve(self, event):
+    def drawCurve(self, event = 0):
         #Calls other functions depending on the drop-down menu
 
         #Clear existing shells and curves
         self.canvas.delete("shell")
         self.canvas.delete("plot")
 
-        if(self.curAlg.get() == self.algList[0] and self.shouldDrawShell.get() == 1):
+        if((self.curAlg.get() == self.algList[0] or self.curAlg.get() == self.algList[1]) and self.shouldDrawShell.get() == 1):
             self.drawShell(self.ctrlPoints, float(self.tScale.get()))
 
         if(self.curAlg.get() == self.algList[0]):
@@ -223,8 +201,9 @@ class Ilan(Frame):
         
 
     def updateShellOnTScaleChange(self, t):
-        self.canvas.delete("shell")
-        self.drawShell(self.ctrlPoints, float(t))
+        if((self.curAlg.get() == self.algList[0] or self.curAlg.get() == self.algList[1]) and self.shouldDrawShell.get() == 1):
+            self.canvas.delete("shell")
+            self.drawShell(self.ctrlPoints, float(t))
 
     def plotPixel(self, x, y):
         self.canvas.create_line(x, y, x + 1, y, fill = "blue", tag = "plot")
@@ -233,6 +212,7 @@ class Ilan(Frame):
         self.canvas.delete("all")
         self.ctrlPoints.clear()
         self.plotPoints.clear()
+        self.ctrlPtNum.set(len(self.ctrlPoints))
 
     def drawLine(self, event):
         #Clear existing lines
@@ -254,8 +234,8 @@ class Ilan(Frame):
         else:
             newPoints = []
             for i in range(0, len(points) - 1):
-                x = (1 - t) * points[i].x + t * points[i+1].x
-                y = (1 - t) * points[i].y + t * points[i+1].y
+                x = (1 - t) * points[i].x + t * points[i + 1].x
+                y = (1 - t) * points[i].y + t * points[i + 1].y
                 newPoints.append(Point(x, y))
             
             self.drawCurveNLI(newPoints, t)
@@ -264,17 +244,18 @@ class Ilan(Frame):
         #Nested Loop Interpolation, Non-recursive version
         n = len(points)
 
-        self.plotPoints.clear()
-        self.plotPoints = deepcopy(points)
+        tmp = deepcopy(points)
 
         for k in range(1, n):
             for i in range (0, n - k):
-                self.plotPoints[i].x = (1 - t) * self.plotPoints[i].x + t * self.plotPoints[i + 1].x
-                self.plotPoints[i].y =  (1 - t) * self.plotPoints[i].y + t * self.plotPoints[i + 1].y
+                tmp[i].x = (1 - t) * tmp[i].x + t * tmp[i + 1].x
+                tmp[i].y = (1 - t) * tmp[i].y + t * tmp[i + 1].y
 
-        for pt in self.plotPoints:
+        #for pt in self.plotPoints:
             #print(pt.x, pt.y)
-            self.plotPixel(pt.x, pt.y)
+        pt = tmp[0]
+        self.plotPixel(pt.x, pt.y)
+
 
     def drawShell(self, points, t):
         if(len(points) > 2):
