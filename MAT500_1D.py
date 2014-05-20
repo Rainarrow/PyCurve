@@ -53,7 +53,7 @@ class Ilan(Frame):
     def __init__(self, parent):
         Frame.__init__(self, parent, background = "white")
 
-        self.algList = ("De Casteljau", "De Casteljau(Recursive)", "Bernstein")#, "Midpt Subdiv")
+        self.algList = ("De Casteljau", "Bernstein")#, "Midpt Subdiv")
         self.parent = parent
         self.ctrlPoints = []
         self.curAlg = StringVar()
@@ -68,7 +68,7 @@ class Ilan(Frame):
 
     def initUI(self):
 
-        self.parent.title("MAT500")
+        self.parent.title("MAT500 Project 1 Shuo Liu")
 
         menubar = Menu(self.parent)
         self.parent.config(menu = menubar)
@@ -87,6 +87,8 @@ class Ilan(Frame):
         self.clearBtn.pack(side = "left")
         self.spawnBtn = Button(self.toolbar, text = "Spawn point", command = self.spawnDefaultPt)
         self.spawnBtn.pack(side = "left")
+        self.spawnBtn = Button(self.toolbar, text = "Despawn point", command = self.despawnDefaultPt)
+        self.spawnBtn.pack(side = "left")
         self.tScale = Scale(self.toolbar, orient = HORIZONTAL, from_ = 0.0, to = 1.0, resolution = 0.01, command = self.updateShellOnTScaleChange)
         self.tScale.set(0.5)
         self.tScale.pack(side = "left")
@@ -95,6 +97,7 @@ class Ilan(Frame):
         self.ctrlPtNum.set("0") 
         self.ctrlPtNumLabel = Label(self.toolbar, textvariable = self.ctrlPtNum)
         self.ctrlPtNumLabel.pack(side = "left")
+
 
         self.shellCheckBox = Checkbutton(self.toolbar, text = "Draw Shell", variable = self.shouldDrawShell, command = self.drawCurve)
         self.shellCheckBox.pack(side = "left")
@@ -110,6 +113,15 @@ class Ilan(Frame):
         self.canvas.tag_bind("ctrlPts", "<ButtonPress-2>", self.getPos)
         self.canvas.tag_bind("ctrlPts", "<B1-Motion>", self.onMotion)
 
+        self.degreeText = StringVar()
+        self.degreeText.set("Degree: ")
+        self.degreeLabel = Label(self.toolbar, textvariable = self.degreeText)
+        self.degreeLabel.pack(side = "left")
+
+        self.degreeNumText = StringVar()
+        self.degreeNumText.set(self.degree)
+        self.degreeNumLabel = Label(self.toolbar, textvariable = self.degreeNumText)
+        self.degreeNumLabel.pack(side = "left")
         self.pack(fill = BOTH, expand = 1)
 
         self.initScene()
@@ -117,12 +129,26 @@ class Ilan(Frame):
     def onExit(self):
         self.quit()
 
+    def despawnDefaultPt(self):
+        if self.degree < 2:
+                return
+
+        self.degree -= 2
+        self.spawnDefaultPt()
 
     def initScene(self):
-        self.canvas.create_line(0, 250, 800, 250, tag = "axis", fill = "blue", width = 2)
-        self.canvas.create_line(15, 15, 15, 700, tag = "axis", fill = "blue", width = 2)
-        self.createPointAt(15, 250)
-        self.createPointAt(760, 250)
+        self.canvas.create_line(0, 250, 800, 250, tag = "axis", fill = "blue", width = 2)#X Axis
+        self.canvas.create_line(15, 15, 15, 700, tag = "axis", fill = "blue", width = 2)#Y Axis
+        self.canvas.create_line(15, 400, 20, 400, tag = "axis", fill = "blue", width = 2)
+        self.canvas.create_line(15, 350, 20, 350, tag = "axis", fill = "blue", width = 2)
+        self.canvas.create_line(15, 300, 20, 300, tag = "axis", fill = "blue", width = 2)
+        self.canvas.create_line(15, 200, 20, 200, tag = "axis", fill = "blue", width = 2)
+        self.canvas.create_line(15, 150, 20, 150, tag = "axis", fill = "blue", width = 2)
+        self.canvas.create_line(15, 100, 20, 100, tag = "axis", fill = "blue", width = 2)
+        self.canvas.create_line(15, 50, 20, 50, tag = "axis", fill = "blue", width = 2)
+        self.canvas.create_line(760, 245, 760, 255, tag = "axis", fill = "blue", width = 2)#X Axis
+        self.createPointAt(15, 200)
+        self.createPointAt(760, 200)
 
 
     def testMidSubDiv(self, event):
@@ -141,13 +167,14 @@ class Ilan(Frame):
 
     def spawnDefaultPt(self):
         self.degree += 1
+        self.degreeNumText.set(self.degree)
 
         self.canvas.delete("ctrlPts")
         self.ctrlPoints.clear()
-        self.createPointAt(15, 250)
+        self.createPointAt(15, 200)
         for i in range(1, self.degree):
             self.createPointAt(i * 800 / self.degree + 1, 200)
-        self.createPointAt(760, 250)
+        self.createPointAt(760, 200)
 
     def addInputPt(self, event):
         self.createPointAt(event.x, event.y)
@@ -200,25 +227,19 @@ class Ilan(Frame):
         self.canvas.delete("shell")
         self.canvas.delete("plot")
 
-        if((self.curAlg.get() == self.algList[0] or self.curAlg.get() == self.algList[1]) and self.shouldDrawShell.get() == 1):
+        if(self.curAlg.get() == self.algList[0] and self.shouldDrawShell.get() == 1):
             self.drawShell(self.ctrlPoints, float(self.tScale.get()))
 
         if(self.curAlg.get() == self.algList[0]):
         #De Castlejau
             t = 0
             while(t <= CONST_ITER_STEPS):
-                self.drawCurveNLI_NR(self.ctrlPoints, t / CONST_ITER_STEPS)
-                t += 1
-        elif(self.curAlg.get() == self.algList[1]):
-            #De Castlejau, Recursive form
-            t = 0
-            while(t <= CONST_ITER_STEPS):
                 self.drawCurveNLI(self.ctrlPoints, t / CONST_ITER_STEPS)
                 t += 1
-        elif(self.curAlg.get() == self.algList[2]):
+        elif(self.curAlg.get() == self.algList[1]):
             #BB-form
             self.drawCurveBB(self.ctrlPoints)
-        elif(self.curAlg.get() == self.algList[3]):
+        elif(self.curAlg.get() == self.algList[2]):
             #Midpoint Subdivision
             print("Exception: algorithm still under work")
         else:
