@@ -60,6 +60,7 @@ class Ilan(Frame):
         self.curAlg.set(self.algList[0])
         self.dragPtIndex = 128
         self.shouldDrawShell = IntVar()
+        self.degree = 1
 
         self.initUI()
 
@@ -84,6 +85,8 @@ class Ilan(Frame):
 
         self.clearBtn = Button(self.toolbar, text = "clear", command = self.clearAll)
         self.clearBtn.pack(side = "left")
+        self.spawnBtn = Button(self.toolbar, text = "Spawn point", command = self.spawnDefaultPt)
+        self.spawnBtn.pack(side = "left")
         self.tScale = Scale(self.toolbar, orient = HORIZONTAL, from_ = 0.0, to = 1.0, resolution = 0.01, command = self.updateShellOnTScaleChange)
         self.tScale.set(0.5)
         self.tScale.pack(side = "left")
@@ -109,8 +112,18 @@ class Ilan(Frame):
 
         self.pack(fill = BOTH, expand = 1)
 
+        self.initScene()
+
     def onExit(self):
         self.quit()
+
+
+    def initScene(self):
+        self.canvas.create_line(0, 250, 800, 250, tag = "axis", fill = "blue", width = 2)
+        self.canvas.create_line(15, 15, 15, 700, tag = "axis", fill = "blue", width = 2)
+        self.createPointAt(15, 250)
+        self.createPointAt(760, 250)
+
 
     def testMidSubDiv(self, event):
         self.canvas.delete("test")
@@ -126,15 +139,27 @@ class Ilan(Frame):
                 self.canvas.create_line(ptr[i].x, ptr[i].y, ptr[i + 1].x, ptr[i + 1].y, tag = "test")
                 self.canvas.create_oval(ptr[i].x, ptr[i].y, ptr[i].x + 10, ptr[i].y + 10, tag = "test", fill = "red")
 
+    def spawnDefaultPt(self):
+        self.degree += 1
+
+        self.canvas.delete("ctrlPts")
+        self.ctrlPoints.clear()
+        self.createPointAt(15, 250)
+        for i in range(1, self.degree):
+            self.createPointAt(i * 800 / self.degree + 1, 200)
+        self.createPointAt(760, 250)
+
     def addInputPt(self, event):
+        self.createPointAt(event.x, event.y)
+
+    def createPointAt(self, x, y):
         #Receives input point from mouse click, draw line segments connecting them, then calls drawCurve
-        self.canvas.create_rectangle(event.x - CONST_POINT_SIZE, event.y - CONST_POINT_SIZE, event.x + CONST_POINT_SIZE, event.y + CONST_POINT_SIZE, fill = "gray", tag = "ctrlPts")
-        self.ctrlPoints.append(Point(event.x, event.y))
+        self.canvas.create_rectangle(x - CONST_POINT_SIZE, y - CONST_POINT_SIZE, x + CONST_POINT_SIZE, y + CONST_POINT_SIZE, fill = "gray", tag = "ctrlPts")
+        self.ctrlPoints.append(Point(x, y))
         self.ctrlPtNum.set(len(self.ctrlPoints))
-        self.drawLine(event)
 
-        self.drawCurve(event)
-
+        self.drawLine()
+        self.drawCurve()
 
     def onDrag(self, event):
         self.dragData["item"] = self.canvas.find_closest(event.x, event.y)[0]
@@ -147,14 +172,15 @@ class Ilan(Frame):
         self.dragPtIndex = (self.ctrlPoints.index(Point(x1 + CONST_POINT_SIZE, y1 + CONST_POINT_SIZE)))
 
     def onMotion(self, event):
-        delta_x = event.x - self.dragData["x"]
+        delta_x = 0
+        #delta_x = event.x - self.dragData["x"]
         delta_y = event.y - self.dragData["y"]
 
         self.canvas.move(self.dragData["item"], delta_x, delta_y)
         self.ctrlPoints[self.dragPtIndex].x += delta_x
         self.ctrlPoints[self.dragPtIndex].y += delta_y
 
-        self.dragData["x"] = event.x
+        self.dragData["x"] = 0#event.x
         self.dragData["y"] = event.y
 
         self.drawLine(event)
@@ -210,10 +236,10 @@ class Ilan(Frame):
     def clearAll(self):
         self.canvas.delete("all")
         self.ctrlPoints.clear()
-        self.plotPoints.clear()
         self.ctrlPtNum.set(len(self.ctrlPoints))
+        self.initScene()
 
-    def drawLine(self, event):
+    def drawLine(self, event = 0):
         #Clear existing lines
         self.canvas.delete("line")
         #Redraw
