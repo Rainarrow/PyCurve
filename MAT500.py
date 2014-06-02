@@ -106,7 +106,7 @@ class Ilan(Frame):
         self.canvas = Canvas(self)
         self.canvas.pack(fill = BOTH, expand = 1)
         #self.canvas.bind("<ButtonPress-2>", self.onCMB)
-        self.canvas.bind("<ButtonPress-2>", self.testMidSubDiv)
+        self.canvas.bind("<ButtonPress-2>", self.drawMidPtSubDiv)
         self.canvas.bind("<ButtonPress-3>", self.addInputPt)
         self.canvas.tag_bind("ctrlPts", "<ButtonPress-1>", self.onDrag)
         self.canvas.tag_bind("ctrlPts", "<ButtonPress-2>", self.getPos)
@@ -127,20 +127,20 @@ class Ilan(Frame):
                     self.canvas.create_line(ptl[i].x, ptl[i].y, ptl[i+1].x, ptl[i+1].y, tag="test")
                 self.canvas.create_oval(ptl[i].x, ptl[i].y, ptl[i].x + 10, ptl[i].y + 10, tag = "test", fill = "green")
 
-        #if(len(ptr) >=2):
-            #for i in range(len(ptr)):
-                #if i != len(ptr)-1:
-                    #self.canvas.create_line(ptr[i].x, ptr[i].y, ptr[i + 1].x, ptr[i + 1].y, tag = "test")
-                #self.canvas.create_oval(ptr[i].x, ptr[i].y, ptr[i].x + 10, ptr[i].y + 10, tag = "test", fill = "red")
+        if(len(ptr) >=2):
+            for i in range(len(ptr)):
+                if i != len(ptr)-1:
+                    self.canvas.create_line(ptr[i].x, ptr[i].y, ptr[i + 1].x, ptr[i + 1].y, tag = "test")
+                self.canvas.create_oval(ptr[i].x, ptr[i].y, ptr[i].x + 10, ptr[i].y + 10, tag = "test", fill = "red")
 
     def addInputPt(self, event):
         #Receives input point from mouse click, draw line segments connecting them, then calls drawCurve
         self.canvas.create_rectangle(event.x - CONST_POINT_SIZE, event.y - CONST_POINT_SIZE, event.x + CONST_POINT_SIZE, event.y + CONST_POINT_SIZE, fill = "gray", tag = "ctrlPts")
         self.ctrlPoints.append(Point(event.x, event.y))
         self.ctrlPtNum.set(len(self.ctrlPoints))
-        #self.drawLine(event)
+        self.drawLine(event)
 
-        #self.drawCurve(event)
+        self.drawCurve(event)
 
 
     def onDrag(self, event):
@@ -229,7 +229,6 @@ class Ilan(Frame):
     def clearAll(self):
         self.canvas.delete("all")
         self.ctrlPoints.clear()
-        self.plotPoints.clear()
         self.ctrlPtNum.set(len(self.ctrlPoints))
 
     def drawLine(self, event):
@@ -299,26 +298,60 @@ class Ilan(Frame):
         left[0] = points[0]
         right[k-1] = points[k-1]
 
-        for i in range(k - 1):
-            curr[i].x = 0.5 * points[i].x + 0.5 * points[i + 1].x
-            curr[i].y = 0.5 * points[i].y + 0.5 * points[i + 1].y
+        for i in range(k-1):
+            curr[i].x = 0.5*points[i].x + 0.5*points[i + 1].x
+            curr[i].y = 0.5*points[i].y + 0.5*points[i + 1].y
 
 
         for i in range(k - 2):
-            left[i + 1] = curr[0]
-            right[k - 2 - i] = curr[k - 2 - i]
-            for j in range(k - 2 - i):
+            left[i+1] = curr[0]
+            right[k-2-i] = curr[k-2-i]
+            for j in range(k-2-i):
                 curr[j] = curr[j].intp(curr[j+1]);
-                #curr[j].x = ((0.5 * curr[j].x) + (0.5 * curr[j + 1].x))
-                #curr[j].y = ((0.5 * curr[j].y) + (0.5 * curr[j + 1].y))
 
-        left[k - 1] = curr[0]
+        left[k-1] = curr[0]
         right[0] = curr[0]
 
         #for pt in left:
         #    self.canvas.create_oval(pt.x, pt.y, pt.x + 20, pt.y + 20, tag = "fuck", fill = "blue")
         #    print("CURR", pt.x, pt.y)
         return left, right
+
+    def drawMidPtSubDiv(self, points):
+        #left, right = self.midpointSubDiv(self.ctrlPoints)
+        self.canvas.delete("midpt")
+        curr = self.midpointSubDiv(self.ctrlPoints)     # curr = turple of (left, right)
+
+        pointList = []      # List of turples
+        pointList.append(curr)
+
+        k = 1
+        
+        for i in range(4):
+            for turple in pointList[k-1:]:
+                for i in turple:
+                    pointList.append(self.midpointSubDiv(i))
+
+            k *= 2
+
+        for turple in pointList[k-1:]:
+            for i in turple:
+                for point in i:
+                    #self.canvas.create_oval(point.x, point.y, point.x+5, point.y+5, tag="midpt", fill="red")
+                    self.canvas.create_line(point.x, point.y, point.next().x, point.next().y, tag="midpt", fill="red")
+
+        """
+        for point in leftL:
+            self.canvas.create_oval(point.x, point.y, point.x+10, point.y+10, tag="midpt", fill="red")
+
+        for point in rightL:
+            self.canvas.create_oval(point.x, point.y, point.x+10, point.y+10, tag="midpt", fill="red")
+
+        if(len(ptl) >=2):
+            for i in range(len(ptl)):
+                if i != len(ptl)-1:
+                    self.canvas.create_line(ptl[i].x, ptl[i].y, ptl[i+1].x, ptl[i+1].y, tag="test")
+        """
 
 
 def main():
