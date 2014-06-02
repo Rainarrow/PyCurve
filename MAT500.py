@@ -1,15 +1,20 @@
 from tkinter import *
 from copy import deepcopy
-import sys, math
+import math
 
 CONST_POINT_SIZE = 5
 CONST_ITER_STEPS = 1024
 
+
 class Point():
 
-    def __init__(self, X = 0, Y = 0):
+    def __init__(self, X=0, Y=0):
         self.x = X
         self.y = Y
+
+    def intp(self, other, t=0.5):       # Interpolate with other points
+        return Point(((1.0-t)*self.x + t*other.x),
+                     ((1.0-t)*self.y + t*other.y))
 
     def prnt(self):
         print("X: ", self.x, " Y: ", self.y)
@@ -53,7 +58,7 @@ class Ilan(Frame):
     def __init__(self, parent):
         Frame.__init__(self, parent, background = "white")
 
-        self.algList = ("De Casteljau", "De Casteljau(Recursive)", "Bernstein")#, "Midpt Subdiv")
+        self.algList = ("De Casteljau", "De Casteljau(Recursive)", "Bernstein", "Midpt Subdiv")
         self.parent = parent
         self.ctrlPoints = []
         self.curAlg = StringVar()
@@ -87,9 +92,9 @@ class Ilan(Frame):
         self.tScale = Scale(self.toolbar, orient = HORIZONTAL, from_ = 0.0, to = 1.0, resolution = 0.01, command = self.updateShellOnTScaleChange)
         self.tScale.set(0.5)
         self.tScale.pack(side = "left")
-        
+
         self.ctrlPtNum = StringVar()
-        self.ctrlPtNum.set("0") 
+        self.ctrlPtNum.set("0")
         self.ctrlPtNumLabel = Label(self.toolbar, textvariable = self.ctrlPtNum)
         self.ctrlPtNumLabel.pack(side = "left")
 
@@ -117,23 +122,25 @@ class Ilan(Frame):
         ptl, ptr = self.midpointSubDiv(self.ctrlPoints)
         print(len(ptr))
         if(len(ptl) >=2):
-            for i in range(len(ptl) - 1):
-                self.canvas.create_line(ptl[i].x, ptl[i].y, ptl[i + 1].x, ptl[i + 1].y, tag = "test")
-                self.canvas.create_oval(ptl[i].x, ptl[i].y, ptl[i].x + 10, ptl[i].y + 10, tag = "test", fill = "red")
+            for i in range(len(ptl)):
+                if i != len(ptl)-1:
+                    self.canvas.create_line(ptl[i].x, ptl[i].y, ptl[i+1].x, ptl[i+1].y, tag="test")
+                self.canvas.create_oval(ptl[i].x, ptl[i].y, ptl[i].x + 10, ptl[i].y + 10, tag = "test", fill = "green")
 
-        if(len(ptr) >=2):
-            for i in range(len(ptr) - 1):
-                self.canvas.create_line(ptr[i].x, ptr[i].y, ptr[i + 1].x, ptr[i + 1].y, tag = "test")
-                self.canvas.create_oval(ptr[i].x, ptr[i].y, ptr[i].x + 10, ptr[i].y + 10, tag = "test", fill = "red")
+        #if(len(ptr) >=2):
+            #for i in range(len(ptr)):
+                #if i != len(ptr)-1:
+                    #self.canvas.create_line(ptr[i].x, ptr[i].y, ptr[i + 1].x, ptr[i + 1].y, tag = "test")
+                #self.canvas.create_oval(ptr[i].x, ptr[i].y, ptr[i].x + 10, ptr[i].y + 10, tag = "test", fill = "red")
 
     def addInputPt(self, event):
         #Receives input point from mouse click, draw line segments connecting them, then calls drawCurve
         self.canvas.create_rectangle(event.x - CONST_POINT_SIZE, event.y - CONST_POINT_SIZE, event.x + CONST_POINT_SIZE, event.y + CONST_POINT_SIZE, fill = "gray", tag = "ctrlPts")
         self.ctrlPoints.append(Point(event.x, event.y))
         self.ctrlPtNum.set(len(self.ctrlPoints))
-        self.drawLine(event)
+        #self.drawLine(event)
 
-        self.drawCurve(event)
+        #self.drawCurve(event)
 
 
     def onDrag(self, event):
@@ -167,37 +174,49 @@ class Ilan(Frame):
         #print(x1, y1, x2, y2)
         print(x1 + 3, y1 + 3)
 
-    def drawCurve(self, event = 0):
+    def drawCurve(self, event=0):
         #Calls other functions depending on the drop-down menu
 
         #Clear existing shells and curves
         self.canvas.delete("shell")
         self.canvas.delete("plot")
 
+        if not self.ctrlPoints:
+            return
+
         if((self.curAlg.get() == self.algList[0] or self.curAlg.get() == self.algList[1]) and self.shouldDrawShell.get() == 1):
             self.drawShell(self.ctrlPoints, float(self.tScale.get()))
 
         if(self.curAlg.get() == self.algList[0]):
         #De Castlejau
+            self.shellCheckBox.config(state='normal')
+            self.tScale.config(state='normal')
             t = 0
             while(t <= CONST_ITER_STEPS):
                 self.drawCurveNLI_NR(self.ctrlPoints, t / CONST_ITER_STEPS)
                 t += 1
         elif(self.curAlg.get() == self.algList[1]):
             #De Castlejau, Recursive form
+            self.shellCheckBox.config(state = 'normal')
+            self.tScale.config(state='normal')
             t = 0
             while(t <= CONST_ITER_STEPS):
                 self.drawCurveNLI(self.ctrlPoints, t / CONST_ITER_STEPS)
                 t += 1
         elif(self.curAlg.get() == self.algList[2]):
+            self.shellCheckBox.config(state = 'disabled')
+            self.tScale.config(state='disabled')
+            t = 0
             #BB-form
             self.drawCurveBB(self.ctrlPoints)
         elif(self.curAlg.get() == self.algList[3]):
+            self.shellCheckBox.config(state = 'disabled')
+            self.tScale.config(state='disabled')
+            t = 0
             #Midpoint Subdivision
             print("Exception: algorithm still under work")
         else:
             print("wtf?! This should NOT happen!")
-        
 
     def updateShellOnTScaleChange(self, t):
         if((self.curAlg.get() == self.algList[0] or self.curAlg.get() == self.algList[1]) and self.shouldDrawShell.get() == 1):
@@ -236,7 +255,7 @@ class Ilan(Frame):
                 x = (1 - t) * points[i].x + t * points[i + 1].x
                 y = (1 - t) * points[i].y + t * points[i + 1].y
                 newPoints.append(Point(x, y))
-            
+
             self.drawCurveNLI(newPoints, t)
 
     def drawCurveNLI_NR(self, points, t):
@@ -247,8 +266,7 @@ class Ilan(Frame):
 
         for k in range(1, n):
             for i in range (0, n - k):
-                tmp[i].x = (1 - t) * tmp[i].x + t * tmp[i + 1].x
-                tmp[i].y = (1 - t) * tmp[i].y + t * tmp[i + 1].y
+                tmp[i] = tmp[i].intp(tmp[i+1], t)
 
         #for pt in self.plotPoints:
             #print(pt.x, pt.y)
@@ -271,6 +289,7 @@ class Ilan(Frame):
         for pt in bezierGenerator(self.ctrlPoints, CONST_ITER_STEPS):
             self.plotPixel(pt.x, pt.y)
 
+
     def midpointSubDiv(self, points):
         k = len(points)
         left = [Point() for _ in range(k)]
@@ -278,28 +297,28 @@ class Ilan(Frame):
         curr = [Point() for _ in range(k - 1)]
 
         left[0] = points[0]
-        right[k - 1] = points[k - 1]
+        right[k-1] = points[k-1]
 
         for i in range(k - 1):
             curr[i].x = 0.5 * points[i].x + 0.5 * points[i + 1].x
             curr[i].y = 0.5 * points[i].y + 0.5 * points[i + 1].y
 
-        
+
         for i in range(k - 2):
             left[i + 1] = curr[0]
             right[k - 2 - i] = curr[k - 2 - i]
             for j in range(k - 2 - i):
-                curr[j].x = 0.5 * curr[j].x + 0.5 * curr[j + 1].x
-                curr[j].y = 0.5 * curr[j].y + 0.5 * curr[j + 1].y
+                curr[j] = curr[j].intp(curr[j+1]);
+                #curr[j].x = ((0.5 * curr[j].x) + (0.5 * curr[j + 1].x))
+                #curr[j].y = ((0.5 * curr[j].y) + (0.5 * curr[j + 1].y))
 
         left[k - 1] = curr[0]
         right[0] = curr[0]
 
-        for pt in left:
-            self.canvas.create_oval(pt.x, pt.y, pt.x + 20, pt.y + 20, tag = "fuck", fill = "blue")
-            print("CURR", pt.x, pt.y)
+        #for pt in left:
+        #    self.canvas.create_oval(pt.x, pt.y, pt.x + 20, pt.y + 20, tag = "fuck", fill = "blue")
+        #    print("CURR", pt.x, pt.y)
         return left, right
-
 
 
 def main():
