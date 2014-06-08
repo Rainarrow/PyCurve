@@ -53,7 +53,7 @@ class Ilan(Frame):
     def __init__(self, parent):
         Frame.__init__(self, parent, background = "white")
 
-        self.algList = ("De Casteljau", "Bernstein")#, "Midpt Subdiv")
+        self.algList = ("De Casteljau", "Bernstein", "Midpt Subdiv")
         self.parent = parent
         self.ctrlPoints = []
         self.curAlg = StringVar()
@@ -68,7 +68,7 @@ class Ilan(Frame):
 
     def initUI(self):
 
-        self.parent.title("MAT500 Project 1 Shuo Liu")
+        self.parent.title("MAT500 Project 2 Shuo Liu")
 
         menubar = Menu(self.parent)
         self.parent.config(menu = menubar)

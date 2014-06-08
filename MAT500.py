@@ -104,7 +104,7 @@ class Ilan(Frame):
 
     def initUI(self):
 
-        self.parent.title("MAT500 Project 2")
+        self.parent.title("MAT500 Project 3")
 
         menubar = Menu(self.parent)
         self.parent.config(menu=menubar)
@@ -235,7 +235,9 @@ class Ilan(Frame):
             self.tScale.config(state='disabled')
             self.drawMidPtSubDiv(self.ctrlPoints)
         else:
-            # Newton
+            # Newton Interpolation
+            self.shellCheckBox.config(state = 'disabled')
+            self.tScale.config(state='disabled')
             a = divDiff(self.ctrlPoints)
             for x in range(0, 8000):
                 self.plotPixel(x*0.1, evalPoly(a, self.ctrlPoints, x*0.1))
