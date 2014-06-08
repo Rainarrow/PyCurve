@@ -6,7 +6,7 @@ CONST_POINT_SIZE = 5
 CONST_ITER_STEPS = 1024
 
 
-class Point():
+class Point(object):
 
     def __init__(self, X=0, Y=0):
         self.x = X
@@ -21,6 +21,32 @@ class Point():
 
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y
+
+    def __add__(self, other):
+        return Point(self.x+other.x, self.y+other.y)
+
+    def __sub__(self, other):
+        return Point(self.x-other.x, self.y-other.y)
+
+def divDiff(points):
+    a = []      # Coefficients
+    m = len(points)
+    for pt in points:
+        a.append(pt.y)
+
+    for k in range(1, m):
+        for i in range(k, m):
+            a[i] = (a[i] - a[k-1]) / (points[i].x - points[k-1].x)
+
+    return a
+
+def evalPoly(a, points, t):
+    # Evaluate polynomial with coeff a, data points at value t
+    n = len(points) - 1
+    p = a[n]  # Constant term
+    for k in range(1, n+1):
+        p += a[n-k] + (t - points[n-k].x) * p    # a_n(x - x_n)
+    return p
 
 
 def calcMidPoint(points):   # Accepts list of Points, returns list of Points
@@ -64,7 +90,7 @@ class Ilan(Frame):
     def __init__(self, parent):
         Frame.__init__(self, parent, background="white")
 
-        self.algList = ("De Casteljau", "Bernstein", "Midpt Subdiv")
+        self.algList = ("De Casteljau", "Bernstein", "Midpt Subdiv", "Newton Interpolation")
         self.parent = parent
         self.ctrlPoints = []
         self.curAlg = StringVar()
@@ -175,7 +201,7 @@ class Ilan(Frame):
         curItem = self.canvas.find_closest(event.x, event.y)
         (x1, y1, x2, y2) = self.canvas.coords(curItem)
         #print(x1, y1, x2, y2)
-        print(x1 + 3, y1 + 3)
+        #print(x1 + 3, y1 + 3)
 
     def drawCurve(self, event=0):
         #Calls other functions depending on the drop-down menu
@@ -209,7 +235,10 @@ class Ilan(Frame):
             self.tScale.config(state='disabled')
             self.drawMidPtSubDiv(self.ctrlPoints)
         else:
-            print("wtf?! This should NOT happen!")
+            # Newton
+            a = divDiff(self.ctrlPoints)
+            for x in range(0, 8000):
+                self.plotPixel(x*0.1, evalPoly(a, self.ctrlPoints, x*0.1))
 
     def updateShellOnTScaleChange(self, t):
         if((self.curAlg.get() == self.algList[0] or self.curAlg.get() == self.algList[1]) and self.shouldDrawShell.get() == 1):
@@ -337,11 +366,13 @@ class Ilan(Frame):
 
 def main():
 
+
     root = Tk()
     root.geometry("800x600+200+200")
     root.option_add('*tearOff', False)
     app = Ilan(root)
     root.mainloop()
+
 
 if __name__ == '__main__':
     main()
