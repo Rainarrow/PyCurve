@@ -96,7 +96,7 @@ class Ilan(Frame):
         self.parent = parent
         self.ctrlPoints = []
         self.curAlg = StringVar()
-        self.curAlg.set(self.algList[0])
+        self.curAlg.set(self.algList[3])
         self.dragPtIndex = 128
         self.shouldDrawShell = IntVar()
 
