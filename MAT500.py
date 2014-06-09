@@ -36,8 +36,10 @@ def divDiff(points):
 
     for k in range(1, m):
         for i in range(k, m):
-            a[i] = (a[i] - a[k-1]) / (points[i].x - points[k-1].x)
-
+            try:
+                a[i] = (a[i] - a[k-1]) / (points[i].x - points[k-1].x)
+            except ZeroDivisionError:
+                print("Warning: duplicated X value in input points. Please move away any offending points.")
     return a
 
 def evalPoly(a, points, t):
@@ -164,7 +166,12 @@ class Ilan(Frame):
                 self.canvas.create_oval(ptr[i].x, ptr[i].y, ptr[i].x+10, ptr[i].y+10, tag="test", fill="red")
 
     def addInputPt(self, event):
-        #Receives input point from mouse click, draw line segments connecting them, then calls drawCurve
+        # Disallows duplicate X-value for Newton Interpolation to avoid DivBy0
+        for pt in self.ctrlPoints:
+            if event.x == pt.x:
+                return
+
+        # Receives input point from mouse click, draw line segments connecting them, then calls drawCurve
         self.canvas.create_rectangle(event.x-CONST_POINT_SIZE, event.y-CONST_POINT_SIZE, event.x+CONST_POINT_SIZE, event.y+CONST_POINT_SIZE, fill="gray", tag="ctrlPts")
         self.ctrlPoints.append(Point(event.x, event.y))
         self.ctrlPtNum.set(len(self.ctrlPoints))
@@ -239,8 +246,10 @@ class Ilan(Frame):
             self.shellCheckBox.config(state = 'disabled')
             self.tScale.config(state='disabled')
             a = divDiff(self.ctrlPoints)
-            for x in range(0, 8000):
-                self.plotPixel(x*0.1, evalPoly(a, self.ctrlPoints, x*0.1))
+            self.canvas.delete("plot")
+            for x in range(0, 800):
+                #self.plotPixel(x*0.1, evalPoly(a, self.ctrlPoints, x*0.1))
+                self.canvas.create_line(x, min(10000, evalPoly(a, self.ctrlPoints, x)), x+1, min(11000, evalPoly(a, self.ctrlPoints, x+1)), fill="blue", tag="plot")
 
     def updateShellOnTScaleChange(self, t):
         if((self.curAlg.get() == self.algList[0] or self.curAlg.get() == self.algList[1]) and self.shouldDrawShell.get() == 1):
