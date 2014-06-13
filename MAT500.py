@@ -42,10 +42,19 @@ def gaussianElim(m):
         else:
             inner = 0
             for x in range(sol):
-                inner += (ans[x]*m[sol][-2-x])
-            result.append((m[sol][-1]-inner)/m[sol][-sol-2]    
+                inner += (result[x]*m[sol][-2-x])
+            result.append((m[sol][-1]-inner)/m[sol][-sol-2])    
+
     result.reverse()
     return result
+
+def evalSpline(t, a):
+        
+
+def truncatedCubicFunc(t, c):
+    # Return (t-c)_+^3
+    return pow(t-c, 3) if t>c else 0
+
 
 def divDiff(points):
     a = []      # Coefficients
@@ -396,6 +405,10 @@ class Ilan(Frame):
 
 def main():
 
+    m=[[2, 1, -1, 8], [-3, -1, 2, -11], [-2, 1, 2, -3]]
+    print(m)
+    a=gaussianElim(m)
+    print(a)
 
     root = Tk()
     root.geometry("800x600+200+200")
