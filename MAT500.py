@@ -48,7 +48,21 @@ def gaussianElim(m):
     result.reverse()
     return result
 
-def evalSpline(t, a):
+def cubicSplineInterp(points):
+    XPoints = []
+    for p in points:
+        XPoints.append(p.x)
+
+    m = len(points) + 1
+
+
+    # Generate matrix
+    mat = []
+    for t in range(1, m):
+        mat.append(points.x * k)
+
+
+
         
 
 def truncatedCubicFunc(t, c):
