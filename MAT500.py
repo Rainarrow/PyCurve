@@ -48,26 +48,82 @@ def gaussianElim(m):
     result.reverse()
     return result
 
+def evalCubicSpline(ax, ay, t):
+    x = 0
+    y = 0
+    for i in range(len(ax)):
+        x += ax[i] * cubicSplineTerm(t, i)
+        y += ay[i] * cubicSplineTerm(t, i)
+    return x, y
+
 def cubicSplineInterp(points):
-    XPoints = []
-    for p in points:
-        XPoints.append(p.x)
 
-    m = len(points) + 1
-
+    n = len(points)
+    m = len(points) + 2 # n+2 free coeffs
 
     # Generate matrix
     mat = []
-    for t in range(1, m):
-        mat.append(points.x * k)
+    xpts = []
+    ypts = []
+    for t in range(n):
+        row = []
+        for c in range(m):
+            row.append(cubicSplineTerm(t, c))
+
+        mat.append(row)
+        xpts.append(points[t].x)
+        ypts.append(points[t].y)
+    # Last two rows: 2nd derivatives
+    row2ndDeriv0 = []
+    row2ndDerivLast = []
+    for c in range(m):
+        row2ndDeriv0.append(cubicSpline2ndDerivTerm(0, c))
+        row2ndDerivLast.append(cubicSpline2ndDerivTerm(n-1, c))
+    mat.append(row2ndDeriv0)
+    xpts.append(0)
+    ypts.append(0)
+    mat.append(row2ndDerivLast)
+    xpts.append(0)
+    ypts.append(0)
+
+    # Generated 2 Augmented Matrices
+    xmat = deepcopy(mat)
+    ymat = deepcopy(mat)
+    for i in range(len(mat)):
+        xmat[i].append(xpts[i])
+        ymat[i].append(ypts[i])
+
+    print(ymat)
+
+    ax = gaussianElim(xmat)
+    ay = gaussianElim(ymat)
+
+    return ax, ay
+
+def cubicSpline2ndDerivTerm(t, col):
+    if col == 0 or col == 1:
+        return 0
+    if col == 2:
+        return 2
+    if col == 3:
+        return 6 * t
+
+    # 6(t-c)+
+    if t < col-3:
+        return 0
+    else:
+        return (t-(col-3)) * 6
 
 
-
-        
+def cubicSplineTerm(t, col):
+    if col < 4:
+        return pow(t, col)
+    else: # (t-c)^3_+
+        return truncatedCubicFunc(t, col-3)
 
 def truncatedCubicFunc(t, c):
     # Return (t-c)_+^3
-    return pow(t-c, 3) if t>c else 0
+    return pow(t-c, 3) if t > c else 0
 
 
 def divDiff(points):
@@ -181,6 +237,7 @@ class Ilan(Frame):
         self.canvas = Canvas(self)
         self.canvas.pack(fill=BOTH, expand=1)
         #self.canvas.bind("<ButtonPress-2>", self.onCMB)
+        self.canvas.bind("<ButtonPress-2>", self.testCubicSpline)
         self.canvas.bind("<ButtonPress-3>", self.addInputPt)
         self.canvas.tag_bind("ctrlPts", "<ButtonPress-1>", self.onDrag)
         self.canvas.tag_bind("ctrlPts", "<ButtonPress-2>", self.getPos)
@@ -251,6 +308,13 @@ class Ilan(Frame):
         (x1, y1, x2, y2) = self.canvas.coords(curItem)
         #print(x1, y1, x2, y2)
         #print(x1 + 3, y1 + 3)
+
+    def testCubicSpline(self, event):
+        ax, ay = cubicSplineInterp(self.ctrlPoints)
+        for i in range(1024):
+            t = (len(self.ctrlPoints) - 1) / 1024 * i
+            x, y = evalCubicSpline(ax, ay, t)
+            self.plotPixel(x, y)
 
     def drawCurve(self, event=0):
         #Calls other functions depending on the drop-down menu
@@ -418,11 +482,6 @@ class Ilan(Frame):
 
 
 def main():
-
-    m=[[2, 1, -1, 8], [-3, -1, 2, -11], [-2, 1, 2, -3]]
-    print(m)
-    a=gaussianElim(m)
-    print(a)
 
     root = Tk()
     root.geometry("800x600+200+200")
