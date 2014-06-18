@@ -93,8 +93,6 @@ def cubicSplineInterp(points):
         xmat[i].append(xpts[i])
         ymat[i].append(ypts[i])
 
-    print(ymat)
-
     ax = gaussianElim(xmat)
     ay = gaussianElim(ymat)
 
@@ -190,11 +188,11 @@ class Ilan(Frame):
     def __init__(self, parent):
         Frame.__init__(self, parent, background="white")
 
-        self.algList = ("De Casteljau", "Bernstein", "Midpt Subdiv", "Newton Interpolation")
+        self.algList = ("De Casteljau", "Bernstein", "Midpt Subdiv", "Newton Interpolation", "Cubic Spline")
         self.parent = parent
         self.ctrlPoints = []
         self.curAlg = StringVar()
-        self.curAlg.set(self.algList[3])
+        self.curAlg.set(self.algList[4])
         self.dragPtIndex = 128
         self.shouldDrawShell = IntVar()
 
@@ -204,7 +202,7 @@ class Ilan(Frame):
 
     def initUI(self):
 
-        self.parent.title("MAT500 Project 3")
+        self.parent.title("MAT500 Project 4")
 
         menubar = Menu(self.parent)
         self.parent.config(menu=menubar)
@@ -237,7 +235,7 @@ class Ilan(Frame):
         self.canvas = Canvas(self)
         self.canvas.pack(fill=BOTH, expand=1)
         #self.canvas.bind("<ButtonPress-2>", self.onCMB)
-        self.canvas.bind("<ButtonPress-2>", self.testCubicSpline)
+        #self.canvas.bind("<ButtonPress-2>", self.testCubicSpline)
         self.canvas.bind("<ButtonPress-3>", self.addInputPt)
         self.canvas.tag_bind("ctrlPts", "<ButtonPress-1>", self.onDrag)
         self.canvas.tag_bind("ctrlPts", "<ButtonPress-2>", self.getPos)
@@ -309,12 +307,14 @@ class Ilan(Frame):
         #print(x1, y1, x2, y2)
         #print(x1 + 3, y1 + 3)
 
-    def testCubicSpline(self, event):
+    def drawCubicSpline(self, event=0):
         ax, ay = cubicSplineInterp(self.ctrlPoints)
-        for i in range(1024):
-            t = (len(self.ctrlPoints) - 1) / 1024 * i
+        for i in range(2048):
+            t = (len(self.ctrlPoints) - 1) / 2048 * i
             x, y = evalCubicSpline(ax, ay, t)
-            self.plotPixel(x, y)
+            x1, y1 = evalCubicSpline(ax, ay, (t+(len(self.ctrlPoints)-1)/2048))
+            #self.plotPixel(x, y)
+            self.canvas.create_line(x, y, x1, y1, fill="blue", tag="plot")
 
     def drawCurve(self, event=0):
         #Calls other functions depending on the drop-down menu
@@ -323,7 +323,7 @@ class Ilan(Frame):
         self.canvas.delete("shell")
         self.canvas.delete("plot")
 
-        if not self.ctrlPoints:
+        if len(self.ctrlPoints) < 2:
             return
 
         if((self.curAlg.get() == self.algList[0] or self.curAlg.get() == self.algList[1]) and self.shouldDrawShell.get() == 1):
@@ -347,7 +347,7 @@ class Ilan(Frame):
             self.shellCheckBox.config(state = 'disabled')
             self.tScale.config(state='disabled')
             self.drawMidPtSubDiv(self.ctrlPoints)
-        else:
+        elif self.curAlg.get() == self.algList[3]:
             # Newton Interpolation
             self.shellCheckBox.config(state = 'disabled')
             self.tScale.config(state='disabled')
@@ -356,6 +356,12 @@ class Ilan(Frame):
             for x in range(0, 800):
                 #self.plotPixel(x*0.1, evalPoly(a, self.ctrlPoints, x*0.1))
                 self.canvas.create_line(x, min(10000, evalPoly(a, self.ctrlPoints, x)), x+1, min(11000, evalPoly(a, self.ctrlPoints, x+1)), fill="blue", tag="plot")
+        else:
+            # Cubic Spline
+            self.shellCheckBox.config(state = 'disabled')
+            self.tScale.config(state='disabled')
+            self.canvas.delete("plot")
+            self.drawCubicSpline()
 
     def updateShellOnTScaleChange(self, t):
         if((self.curAlg.get() == self.algList[0] or self.curAlg.get() == self.algList[1]) and self.shouldDrawShell.get() == 1):
